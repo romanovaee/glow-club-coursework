@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подбор ухода — GLOW CLUB</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+    <script defer src="assets/app.js"></script>
+</head>
+<body>
+    <div class="announcement">
+        GLOW IS A GOOD MOOD <span>✳</span> БЕСПЛАТНАЯ ДОСТАВКА ОТ 4 000 ₽ <span>✳</span> GLOW IS A GOOD MOOD
+    </div>
+
+    <header class="header">
+        <a class="logo" href="index.html">GLOW<span>CLUB</span><i>®</i></a>
+
+        <nav class="nav">
+            <a href="index.html">Главная</a>
+            <a href="catalog.html">Каталог</a>
+            <a href="about.html">О нас</a>
+            <a class="active" href="routine.html">Подбор ухода</a>
+        </nav>
+
+        <div class="header-actions">
+            <a href="account.html" class="account-link" aria-label="Личный кабинет">☺</a>
+            <a href="favorites.html">♡ <b id="fav-count">0</b></a>
+            <a href="cart.html" class="bag">Сумка <b id="cart-count">0</b></a>
+            <button class="menu-toggle">☰</button>
+        </div>
+    </header>
+
+    <main class="page-wrap routine-page">
+        <p class="eyebrow">YOUR SKIN, YOUR RULES / MINI GUIDE</p>
+        <h1>НАЙДЁМ ТВОЙ<br><em>GLOW ROUTINE.</em></h1>
+        <p class="routine-lead">Ответь на три вопроса — и мы покажем продукты, с которых можно начать свой ритуал.</p>
+
+        <div class="quiz-card" id="routine-quiz">
+            <div class="quiz-progress">
+                <span id="quiz-step-label">ШАГ 01 / 03</span>
+                <div>
+                    <i id="quiz-progress"></i>
+                </div>
+            </div>
+
+            <div class="quiz-question" id="quiz-question">Как ощущает себя твоя кожа?</div>
+
+            <div class="quiz-options" id="quiz-options">
+                <button data-value="Сухая">Сухая / стянутая</button>
+                <button data-value="Комбинированная">Комбинированная</button>
+                <button data-value="Жирная">Жирная / блестит</button>
+                <button data-value="Нормальная">Нормальная / всё ок</button>
+            </div>
+
+            <button class="quiz-next" id="quiz-next" disabled>Дальше ↗</button>
+
+            <div class="quiz-result" id="quiz-result" hidden></div>
+        </div>
+
+        <p class="quiz-disclaimer">Подбор носит ознакомительный характер и не заменяет консультацию дерматолога.</p>
+    </main>
+
+    <footer class="footer">
+        <a class="logo logo-white" href="index.html">GLOW<span>CLUB</span><i>®</i></a>
+        <p>Красота без правил. Только ты.</p>
+        <div class="footer-links">
+            <a href="catalog.html">Каталог</a>
+            <a href="contacts.html">Контакты</a>
+        </div>
+        <small>© 2026 GLOW CLUB · учебный проект</small>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+</body>
+</html>

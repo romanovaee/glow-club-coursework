@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог — GLOW CLUB</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+    <script defer src="assets/app.js"></script>
+</head>
+<body>
+    <div class="announcement">
+        GLOW IS A GOOD MOOD <span>✳</span> БЕСПЛАТНАЯ ДОСТАВКА ОТ 4 000 ₽ <span>✳</span> GLOW IS A GOOD MOOD
+    </div>
+
+    <header class="header">
+        <a class="logo" href="index.html">GLOW<span>CLUB</span><i>®</i></a>
+
+        <nav class="nav">
+            <a href="index.html">Главная</a>
+            <a class="active" href="catalog.html">Каталог</a>
+            <a href="about.html">О нас</a>
+            <a href="routine.html">Подбор ухода</a>
+        </nav>
+
+        <div class="header-actions">
+            <a href="account.html" class="account-link" aria-label="Личный кабинет">☺</a>
+            <a href="favorites.html">♡ <b id="fav-count">0</b></a>
+            <a href="cart.html" class="bag">Сумка <b id="cart-count">0</b></a>
+            <button class="menu-toggle">☰</button>
+        </div>
+    </header>
+
+    <main class="page-wrap">
+        <div class="page-kicker">GLOW CLUB / SHOP</div>
+
+        <div class="catalog-title">
+            <div>
+                <p class="eyebrow">ПОДБЕРИ СВОЁ</p>
+                <h1>THE BEAUTY<br><em>PLAYGROUND.</em></h1>
+            </div>
+            <p>Средства для лица, тела и настроения.<br>Выбирай то, что откликается именно тебе.</p>
+        </div>
+
+        <div class="catalog-toolbar">
+            <div class="filters" id="category-filters">
+                <button class="filter active" data-filter="Все">Все продукты</button>
+                <button class="filter" data-filter="Уход">Уход</button>
+                <button class="filter" data-filter="Макияж">Макияж</button>
+                <button class="filter" data-filter="Тело">Тело</button>
+            </div>
+            <select id="sort-products" aria-label="Сортировка">
+                <option value="default">Сначала популярные</option>
+                <option value="low">Сначала дешевле</option>
+                <option value="high">Сначала дороже</option>
+            </select>
+        </div>
+
+        <div class="product-grid catalog-products" id="catalog-products"></div>
+
+        <div class="catalog-bottom">SHOW YOURSELF SOME LOVE <span>✳</span> GLOW CLUB</div>
+    </main>
+
+    <footer class="footer">
+        <a class="logo logo-white" href="index.html">GLOW<span>CLUB</span><i>®</i></a>
+        <p>Красота без правил. Только ты.</p>
+        <div class="footer-links">
+            <a href="delivery.html">Доставка</a>
+            <a href="contacts.html">Контакты</a>
+            <a href="about.html">О бренде</a>
+        </div>
+        <small>© 2026 GLOW CLUB · учебный проект</small>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+</body>
+</html>
