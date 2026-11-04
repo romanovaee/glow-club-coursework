@@ -11,7 +11,7 @@ const get = key => {
 
 const set = (key, val) => localStorage.setItem(key, JSON.stringify(val));
 
-// 2. Теперь безопасно используем их для переменных
+// 2. Переменные
 let products = [];
 let cart = get('glow-cart'), fav = get('glow-fav');
 
@@ -24,7 +24,6 @@ async function fetchProducts() {
         // Преобразуем поле image_url из БД в img, которое ждет твой сайт
         products = dataFromDB.map(p => ({ ...p, img: p.image_url }));
 
-        // После загрузки данных запускаем отрисовку интерфейса
         updateCounts();
         renderAllProducts();
         renderProduct();
@@ -36,10 +35,9 @@ async function fetchProducts() {
     }
 }
 
-// Запускаем загрузку
 fetchProducts();
 
-// --- ОСТАЛЬНАЯ ЛОГИКА САЙТА ---
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 
 function toast(msg) {
     const t = document.getElementById('toast');
@@ -54,6 +52,12 @@ function updateCounts() {
     document.querySelectorAll('#cart-count').forEach(x => x.textContent = cart.reduce((s, i) => s + i.qty, 0));
     document.querySelectorAll('#fav-count').forEach(x => x.textContent = fav.length);
 }
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+}
+
+// --- КОРЗИНА И ИЗБРАННОЕ ---
 
 function addCart(id) {
     const item = cart.find(x => x.id === id);
@@ -72,6 +76,8 @@ function toggleFav(id) {
     renderAllProducts();
     toast(fav.includes(id) ? 'Сохранили в избранное ♡' : 'Удалили из избранного');
 }
+
+// --- ОТРИСОВКА ---
 
 function card(p) {
     return `<article class="product-card"><a class="product-image" href="product.html?id=${p.id}"><img src="${p.img}" alt="${p.name}" loading="lazy"><span class="product-tag">${p.tag}</span></a><button class="heart ${fav.includes(p.id) ? 'active' : ''}" onclick="toggleFav(${p.id})" aria-label="В избранное">${fav.includes(p.id) ? '♥' : '♡'}</button><div class="product-info"><div class="product-category">${p.type}</div><a href="product.html?id=${p.id}" class="product-name">${p.name}</a><div class="product-bottom"><span class="product-price">${money(p.price)}</span><button class="add-btn" onclick="addCart(${p.id})">+ В СУМКУ</button></div></div></article>`;
@@ -99,7 +105,6 @@ function renderCatalog() {
     const cat = document.getElementById('catalog-products');
     if (!cat) return;
     
-    // Сравниваем ID категории из базы данных с выбранной кнопкой
     let list = products.filter(p => activeCategory === 'Все' || String(p.category_id) === String(activeCategory));
     
     const sort = document.getElementById('sort-products')?.value;
@@ -164,88 +169,7 @@ function removeCart(id) {
     toast('Удалено из сумки');
 }
 
-function setupQuiz() {
-    const q = document.getElementById('routine-quiz');
-    if (!q) return;
-
-    const questions = [
-        {title: 'Как ощущает себя твоя кожа?', opts: ['Сухая / стянутая', 'Комбинированная', 'Жирная / блестит', 'Нормальная / всё ок']},
-        {title: 'Что хочется добавить в уход?', opts: ['Больше увлажнения', 'Свежесть и баланс', 'Сияние и ровный тон', 'Просто базовый уход']},
-        {title: 'Какой у тебя ритм?', opts: ['Люблю 3–4 шага', 'Только самое нужное', 'Обожаю бьюти-ритуалы', 'Пока только начинаю']}
-    ];
-
-    let step = 0, answers = [];
-    const title = document.getElementById('quiz-question'),
-        opts = document.getElementById('quiz-options'),
-        next = document.getElementById('quiz-next'),
-        label = document.getElementById('quiz-step-label'),
-        bar = document.getElementById('quiz-progress'),
-        result = document.getElementById('quiz-result');
-
-    function draw() {
-        title.textContent = questions[step].title;
-        label.textContent = `ШАГ 0${step + 1} / 03`;
-        bar.style.width = ((step + 1) / 3 * 100) + '%';
-        opts.innerHTML = questions[step].opts.map(x => `<button data-value="${x}">${x}</button>`).join('');
-        next.disabled = true;
-        opts.querySelectorAll('button').forEach(b => b.onclick = () => {
-            opts.querySelectorAll('button').forEach(x => x.classList.remove('selected'));
-            b.classList.add('selected');
-            answers[step] = b.dataset.value;
-            next.disabled = false;
-        });
-    }
-
-    next.onclick = () => {
-        if (step < 2) {
-            step++;
-            draw();
-        } else {
-            opts.hidden = true;
-            next.hidden = true;
-            title.hidden = true;
-            result.hidden = false;
-            result.innerHTML = `<h3>Твой glow-настрой найден ✳</h3><p>Начни с мягкого очищения, добавь увлажняющую сыворотку и не забывай о SPF днём. Выбирай комфортные текстуры и вводи новые продукты постепенно.</p><a href="catalog.html">Подобрать продукты в каталоге ↗</a>`;
-        }
-    };
-
-    draw();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    setupQuiz();
-
-    document.querySelectorAll('#category-filters .filter').forEach(b => b.addEventListener('click', () => {
-        document.querySelectorAll('#category-filters .filter').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        
-        // Если нажали "Все продукты", передаем 'Все'. Иначе передаем ID категории (1, 2 или 3)
-        const filterValue = b.dataset.filter;
-        if (filterValue === 'Уход') activeCategory = 1;
-        else if (filterValue === 'Макияж') activeCategory = 2;
-        else if (filterValue === 'Тело') activeCategory = 3;
-        else activeCategory = 'Все';
-        
-        renderCatalog();
-    }));
-
-    document.getElementById('sort-products')?.addEventListener('change', renderCatalog);
-
-    document.querySelector('.menu-toggle')?.addEventListener('click', () => document.querySelector('.nav')?.classList.toggle('open'));
-
-    document.getElementById('contact-form')?.addEventListener('submit', e => {
-        e.preventDefault();
-        e.target.reset();
-        toast('Спасибо! Сообщение принято в демо-режиме ✳');
-    });
-
-    document.getElementById('newsletter-form')?.addEventListener('submit', e => {
-        e.preventDefault();
-        e.target.reset();
-        toast('Ты теперь в клубе! ✳');
-    });
-});
-
+// --- ОФОРМЛЕНИЕ ЗАКАЗА (С СОХРАНЕНИЕМ В БД) ---
 function deliveryFee(method, subtotal) {
     return subtotal >= 4000 ? 0 : (method === 'Пункт выдачи' ? 250 : 350);
 }
@@ -293,7 +217,8 @@ function setupCheckout() {
 
     document.querySelectorAll('[name="delivery"]').forEach(x => x.addEventListener('change', renderCheckout));
 
-    form.addEventListener('submit', e => {
+    // ВАЖНО: добавили async, чтобы работал await
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!form.reportValidity()) return;
 
@@ -326,9 +251,37 @@ function setupCheckout() {
             subtotal,
             shipping,
             total: subtotal + shipping,
-            status: 'Принят (демо)',
+            status: 'Принят',
             userEmail: (user?.email || fd.get('email')).toLowerCase()
         };
+
+        // --- ОТПРАВЛЯЕМ ЗАКАЗ НА СЕРВЕР В БАЗУ ДАННЫХ ---
+        try {
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer: order.customer,
+                    phone: order.phone,
+                    email: order.email,
+                    city: order.city,
+                    address: order.address,
+                    postcode: order.postcode,
+                    delivery: order.delivery,
+                    payment: order.payment,
+                    items: order.items,
+                    total: order.total
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Заказ сохранен в БД:', result.orderNumber);
+                order.number = result.orderNumber;
+            }
+        } catch (err) {
+            console.error('Ошибка сохранения заказа в БД:', err);
+        }
+        // ------------------------------------------------
 
         orders.unshift(order);
         set('glow-orders', orders);
@@ -342,7 +295,7 @@ function setupCheckout() {
 
         const success = document.getElementById('order-success');
         success.hidden = false;
-        success.innerHTML = `<p class="eyebrow">ORDER PLACED / THANK YOU</p><h2>ТВОЙ GLOW УЖЕ<br>СОБИРАЕТСЯ ✳</h2><p>Заказ <b>${order.number}</b> оформлен!<br>Получатель: ${escapeHtml(order.customer)} · ${escapeHtml(order.phone)}<br>Адрес: ${escapeHtml(order.city)}, ${escapeHtml(order.address)}<br>Доставка: ${escapeHtml(order.delivery)} · ${escapeHtml(order.date)}, ${escapeHtml(order.time)}<br>Оплата: ${escapeHtml(order.payment)}<br><b>К оплате: ${money(order.total)}</b></p><p>Заказ сохранён в этом браузере. В личном кабинете он появится при входе с тем же e-mail.</p><a class="btn btn-dark" href="account.html">В личный кабинет ↗</a> <a class="text-link" href="catalog.html">Продолжить покупки</a>`;
+        success.innerHTML = `<p class="eyebrow">ORDER PLACED / THANK YOU</p><h2>ТВОЙ GLOW УЖЕ<br>СОБИРАЕТСЯ ✳</h2><p>Заказ <b>${order.number}</b> оформлен!<br>Получатель: ${escapeHtml(order.customer)} · ${escapeHtml(order.phone)}<br>Адрес: ${escapeHtml(order.city)}, ${escapeHtml(order.address)}<br>Доставка: ${escapeHtml(order.delivery)} · ${escapeHtml(order.date)}, ${escapeHtml(order.time)}<br>Оплата: ${escapeHtml(order.payment)}<br><b>К оплате: ${money(order.total)}</b></p><p>Заказ сохранён в базе данных. В личном кабинете он появится при входе с тем же e-mail.</p><a class="btn btn-dark" href="account.html">В личный кабинет ↗</a> <a class="text-link" href="catalog.html">Продолжить покупки</a>`;
 
         window.scrollTo({top: 0, behavior: 'smooth'});
     });
@@ -439,11 +392,61 @@ function setupAuth() {
     }
 }
 
-function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-}
-
+// --- ЗАПУСК ВСЕГО ПРИ ЗАГРУЗКЕ ---
 document.addEventListener('DOMContentLoaded', () => {
     setupAuth();
     setupCheckout();
+});
+
+function setupQuiz() {
+    const q = document.getElementById('routine-quiz');
+    if (!q) return;
+
+    const questions = [
+        {title: 'Как ощущает себя твоя кожа?', opts: ['Сухая / стянутая', 'Комбинированная', 'Жирная / блестит', 'Нормальная / всё ок']},
+        {title: 'Что хочется добавить в уход?', opts: ['Больше увлажнения', 'Свежесть и баланс', 'Сияние и ровный тон', 'Просто базовый уход']},
+        {title: 'Какой у тебя ритм?', opts: ['Люблю 3–4 шага', 'Только самое нужное', 'Обожаю бьюти-ритуалы', 'Пока только начинаю']}
+    ];
+
+    let step = 0, answers = [];
+    const title = document.getElementById('quiz-question'),
+        opts = document.getElementById('quiz-options'),
+        next = document.getElementById('quiz-next'),
+        label = document.getElementById('quiz-step-label'),
+        bar = document.getElementById('quiz-progress'),
+        result = document.getElementById('quiz-result');
+
+    function draw() {
+        title.textContent = questions[step].title;
+        label.textContent = `ШАГ 0${step + 1} / 03`;
+        bar.style.width = ((step + 1) / 3 * 100) + '%';
+        opts.innerHTML = questions[step].opts.map(x => `<button data-value="${x}">${x}</button>`).join('');
+        next.disabled = true;
+        opts.querySelectorAll('button').forEach(b => b.onclick = () => {
+            opts.querySelectorAll('button').forEach(x => x.classList.remove('selected'));
+            b.classList.add('selected');
+            answers[step] = b.dataset.value;
+            next.disabled = false;
+        });
+    }
+
+    next.onclick = () => {
+        if (step < 2) {
+            step++;
+            draw();
+        } else {
+            opts.hidden = true;
+            next.hidden = true;
+            title.hidden = true;
+            result.hidden = false;
+            result.innerHTML = `<h3>Твой glow-настрой найден ✳</h3><p>Начни с мягкого очищения, добавь увлажняющую сыворотку и не забывай о SPF днём. Выбирай комфортные текстуры и вводи новые продукты постепенно.</p><a href="catalog.html">Подобрать продукты в каталоге ↗</a>`;
+        }
+    };
+
+    draw();
+}
+
+// Запуск опроса при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    setupQuiz();
 });
