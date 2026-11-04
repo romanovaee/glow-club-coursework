@@ -1,15 +1,36 @@
-let products = []; // Создаем пустой массив, сюда придут товары из БД
+// 1. Сначала объявляем функции для работы с localStorage
+const money = n => new Intl.NumberFormat('ru-RU').format(n) + ' ₽';
 
-// Запрашиваем товары у нашего сервера при загрузке
+const get = key => {
+    try {
+        return JSON.parse(localStorage.getItem(key)) || [];
+    } catch (e) {
+        return [];
+    }
+};
+
+const set = (key, val) => localStorage.setItem(key, JSON.stringify(val));
+
+// 2. Теперь безопасно используем их для переменных
+let products = [];
+let cart = get('glow-cart'), fav = get('glow-fav');
+
+// --- ЗАГРУЗКА ТОВАРОВ ИЗ БАЗЫ ДАННЫХ ---
 async function fetchProducts() {
     try {
         const response = await fetch('/api/products');
-        products = await response.json();
+        const dataFromDB = await response.json();
         
-        // Когда товары загрузились, перерисовываем страницу
-        if (typeof renderAllProducts === 'function') renderAllProducts();
-        if (typeof renderProduct === 'function') renderProduct();
-        if (typeof renderCart === 'function') renderCart();
+        // Преобразуем поле image_url из БД в img, которое ждет твой сайт
+        products = dataFromDB.map(p => ({ ...p, img: p.image_url }));
+
+        // После загрузки данных запускаем отрисовку интерфейса
+        updateCounts();
+        renderAllProducts();
+        renderProduct();
+        renderCart();
+        
+        if (typeof renderCheckout === 'function') renderCheckout();
     } catch (error) {
         console.error("Ошибка загрузки товаров:", error);
     }
@@ -18,17 +39,7 @@ async function fetchProducts() {
 // Запускаем загрузку
 fetchProducts();
 
-const money = n => new Intl.NumberFormat('ru-RU').format(n) + ' ₽';
-const get = key => {
-    try {
-        return JSON.parse(localStorage.getItem(key)) || [];
-    } catch (e) {
-        return [];
-    }
-};
-const set = (key, val) => localStorage.setItem(key, JSON.stringify(val));
-
-let cart = get('glow-cart'), fav = get('glow-fav');
+// --- ОСТАЛЬНАЯ ЛОГИКА САЙТА ---
 
 function toast(msg) {
     const t = document.getElementById('toast');
@@ -87,7 +98,10 @@ let activeCategory = 'Все';
 function renderCatalog() {
     const cat = document.getElementById('catalog-products');
     if (!cat) return;
-    let list = products.filter(p => activeCategory === 'Все' || p.category === activeCategory);
+    
+    // Сравниваем ID категории из базы данных с выбранной кнопкой
+    let list = products.filter(p => activeCategory === 'Все' || String(p.category_id) === String(activeCategory));
+    
     const sort = document.getElementById('sort-products')?.value;
     if (sort === 'low') list.sort((a, b) => a.price - b.price);
     if (sort === 'high') list.sort((a, b) => b.price - a.price);
@@ -99,8 +113,11 @@ function renderProduct() {
     if (!box) return;
     const id = Number(new URLSearchParams(location.search).get('id')) || 1;
     const p = products.find(x => x.id === id) || products[0];
+    if (!p) return; 
+    
     document.title = p.name + ' — GLOW CLUB';
-    box.innerHTML = `<div class="detail-image"><img src="${p.img}" alt="${p.name}"></div><div class="detail-copy"><p class="eyebrow">${p.category.toUpperCase()} / ${p.type}</p><span class="product-tag">${p.tag}</span><h1>${p.name}</h1><div class="detail-price">${money(p.price)}</div><p>${p.desc}</p><div class="detail-meta"><b>КАК ИСПОЛЬЗОВАТЬ</b><br>Нанеси небольшое количество средства согласно его назначению. Перед первым применением проверь индивидуальную переносимость.</div><div class="detail-actions"><button class="btn btn-dark" onclick="addCart(${p.id})">Добавить в сумку ↗</button><button class="detail-heart" onclick="toggleFav(${p.id});this.textContent=fav.includes(${p.id})?'♥':'♡'">${fav.includes(p.id) ? '♥' : '♡'}</button></div></div>`;
+    box.innerHTML = `<div class="detail-image"><img src="${p.img}" alt="${p.name}"></div><div class="detail-copy"><p class="eyebrow">${p.category ? p.category.toUpperCase() : 'УХОД'} / ${p.type}</p><span class="product-tag">${p.tag}</span><h1>${p.name}</h1><div class="detail-price">${money(p.price)}</div><p>${p.description}</p><div class="detail-meta"><b>КАК ИСПОЛЬЗОВАТЬ</b><br>Нанеси небольшое количество средства согласно его назначению. Перед первым применением проверь индивидуальную переносимость.</div><div class="detail-actions"><button class="btn btn-dark" onclick="addCart(${p.id})">Добавить в сумку ↗</button><button class="detail-heart" onclick="toggleFav(${p.id});this.textContent=fav.includes(${p.id})?'♥':'♡'">${fav.includes(p.id) ? '♥' : '♡'}</button></div></div>`;
+    
     const related = document.getElementById('related-products');
     if (related) related.innerHTML = products.filter(x => x.id !== p.id).slice(0, 4).map(card).join('');
 }
@@ -120,9 +137,12 @@ function renderCart() {
     }
 
     const total = cart.reduce((s, i) => s + products.find(p => p.id === i.id).price * i.qty, 0);
-    document.getElementById('subtotal').textContent = money(total);
-    document.getElementById('total').textContent = money(total);
-    document.getElementById('shipping').textContent = total >= 4000 ? 'Бесплатно' : 'от 250 ₽';
+    const subtotalEl = document.getElementById('subtotal');
+    if (subtotalEl) {
+        subtotalEl.textContent = money(total);
+        document.getElementById('total').textContent = money(total);
+        document.getElementById('shipping').textContent = total >= 4000 ? 'Бесплатно' : 'от 250 ₽';
+    }
     set('glow-cart', cart);
     updateCounts();
 }
@@ -193,16 +213,19 @@ function setupQuiz() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    updateCounts();
-    renderAllProducts();
-    renderProduct();
-    renderCart();
     setupQuiz();
 
     document.querySelectorAll('#category-filters .filter').forEach(b => b.addEventListener('click', () => {
         document.querySelectorAll('#category-filters .filter').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
-        activeCategory = b.dataset.filter;
+        
+        // Если нажали "Все продукты", передаем 'Все'. Иначе передаем ID категории (1, 2 или 3)
+        const filterValue = b.dataset.filter;
+        if (filterValue === 'Уход') activeCategory = 1;
+        else if (filterValue === 'Макияж') activeCategory = 2;
+        else if (filterValue === 'Тело') activeCategory = 3;
+        else activeCategory = 'Все';
+        
         renderCatalog();
     }));
 
@@ -223,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-
 function deliveryFee(method, subtotal) {
     return subtotal >= 4000 ? 0 : (method === 'Пункт выдачи' ? 250 : 350);
 }
@@ -243,9 +265,12 @@ function renderCheckout() {
         }).join('')
         : '<p class="checkout-disclaimer">Сумка пуста — добавь товары в каталог.</p>';
 
-    document.getElementById('order-subtotal').textContent = money(subtotal);
-    document.getElementById('order-shipping').textContent = fee ? money(fee) : 'Бесплатно';
-    document.getElementById('order-total').textContent = money(subtotal + fee);
+    const orderSubEl = document.getElementById('order-subtotal');
+    if(orderSubEl) {
+        orderSubEl.textContent = money(subtotal);
+        document.getElementById('order-shipping').textContent = fee ? money(fee) : 'Бесплатно';
+        document.getElementById('order-total').textContent = money(subtotal + fee);
+    }
 
     const date = document.querySelector('[name="date"]');
     if (date) {
@@ -325,8 +350,7 @@ function setupCheckout() {
     renderCheckout();
 }
 
-// Простая демонстрационная авторизация на стороне браузера.
-// Для реального проекта пароли должны храниться на сервере в хешированном виде.
+// --- АВТОРИЗАЦИЯ ---
 function getUsers() {
     try {
         return JSON.parse(localStorage.getItem('glow-users')) || [];
